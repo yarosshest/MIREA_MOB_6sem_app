@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MIREA_MOB_6sem</string>
+    <string name="login">Login</string>
+    <string name="password">Password</string>
+    <string name="registration">Registration</string>
+    <string name="get_recommindations">Get Recommindations</string>
+    <string name="Input_name">Input name</string>
+    <string name="imagebuttonlike">imageButtonLike</string>
+    <string name="imagebuttondislike">imageButtonDislike</string>
+    <string name="title_main">main</string>
+    <string name="Search">Поиск</string>
+    <string name="recom">Рекомендация</string>
+</resources>
