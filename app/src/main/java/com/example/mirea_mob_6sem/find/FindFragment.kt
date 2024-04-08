@@ -44,6 +44,8 @@ class FindFragment : Fragment() {
 
         val search = view.findViewById<SearchView>(R.id.searchName)
 
+        search.setQuery(viewModel.getFindLine(), false)
+
         listFilm = view.findViewById(R.id.listFilm)
 
         val savedFilms = viewModel.getFindList()
@@ -72,6 +74,9 @@ class FindFragment : Fragment() {
 
         search.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
+                if (p0 != null) {
+                    viewModel.saveFindLine(p0)
+                }
                 p0?.let { api.find(line = it) }
                     ?.enqueue(object : Callback<List<Film>> {
                         override fun onResponse(
@@ -102,6 +107,7 @@ class FindFragment : Fragment() {
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
+
                 return true
             }
         })
@@ -121,4 +127,5 @@ class FindFragment : Fragment() {
         })
         return adapter
     }
+
 }

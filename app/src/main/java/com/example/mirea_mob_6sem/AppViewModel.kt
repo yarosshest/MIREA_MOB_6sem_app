@@ -10,6 +10,7 @@ import com.example.mirea_mob_6sem.find.FilmAdapter
 class AppViewModel: ViewModel()  {
     private val findList = MutableLiveData<List<Film>>()
     private val recommendList = MutableLiveData<List<Film>>()
+    private var findLine = String()
 
     private val statusRecommendService = MutableLiveData(false)
 
@@ -36,6 +37,14 @@ class AppViewModel: ViewModel()  {
 
     fun getObserveRecommendList() : LiveData<List<Film>> {
         return recommendList
+    }
+
+    fun saveFindLine(line : String){
+        findLine = line
+    }
+
+    fun getFindLine(): String {
+        return findLine
     }
 
 }

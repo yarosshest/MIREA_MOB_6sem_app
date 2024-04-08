@@ -8,6 +8,6 @@
     <string name="imagebuttonlike">imageButtonLike</string>
     <string name="imagebuttondislike">imageButtonDislike</string>
     <string name="title_main">main</string>
-    <string name="Search">Поиск</string>
-    <string name="recom">Рекомендация</string>
+    <string name="Search">Search</string>
+    <string name="recom">Recommindations</string>
 </resources>

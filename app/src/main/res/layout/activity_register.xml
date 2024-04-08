@@ -13,6 +13,7 @@
         android:ems="10"
         android:hint="@string/login"
         android:inputType="text"
+        android:fontFamily="@font/font"
         app:layout_constraintBottom_toTopOf="@+id/editTextTextPassword"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

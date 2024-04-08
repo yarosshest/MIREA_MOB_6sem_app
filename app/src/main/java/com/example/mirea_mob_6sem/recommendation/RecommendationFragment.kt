@@ -20,7 +20,6 @@ import com.example.mirea_mob_6sem.api.Api
 import com.example.mirea_mob_6sem.api.Film
 import com.example.mirea_mob_6sem.api.RetrofitHelper
 import com.example.mirea_mob_6sem.databinding.FragmentRecommendationBinding
-import com.example.mirea_mob_6sem.databinding.FragmentTimerBinding
 import com.example.mirea_mob_6sem.find.FilmAdapter
 import retrofit2.Call
 import retrofit2.Callback
