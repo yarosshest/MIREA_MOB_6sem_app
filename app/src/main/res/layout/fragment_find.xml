@@ -28,6 +28,15 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+        <Button
+            android:id="@+id/buttonUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            tools:visibility="visible"
+
+            android:text="@string/update" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id='@+id/listFilm'
             android:layout_width="match_parent"

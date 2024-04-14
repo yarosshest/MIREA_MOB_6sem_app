@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.core.os.bundleOf
@@ -29,6 +30,8 @@ class FindFragment : Fragment() {
 
     private lateinit var listFilm : RecyclerView
 
+
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -42,12 +45,15 @@ class FindFragment : Fragment() {
 
         val textError : TextView = view.findViewById(R.id.textError)
 
-        val search = view.findViewById<SearchView>(R.id.searchName)
+        val buttonUpdate : Button = view.findViewById(R.id.buttonUpdate)
+        buttonUpdate.setOnClickListener { v ->
+            update(v)
+        }
 
+        val search = view.findViewById<SearchView>(R.id.searchName)
         search.setQuery(viewModel.getFindLine(), false)
 
         listFilm = view.findViewById(R.id.listFilm)
-
         val savedFilms = viewModel.getFindList()
 
 
@@ -72,6 +78,7 @@ class FindFragment : Fragment() {
 
         val api = RetrofitHelper.getInstance().create(Api::class.java)
 
+
         search.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 if (p0 != null) {
@@ -83,6 +90,7 @@ class FindFragment : Fragment() {
                             call: Call<List<Film>>,
                             response: Response<List<Film>>
                         ) {
+                            buttonUpdate.visibility = View.GONE
                             if (response.isSuccessful) {
                                 textError.visibility = View.GONE
                                 val films = response.body()
@@ -99,6 +107,9 @@ class FindFragment : Fragment() {
                         }
 
                         override fun onFailure(call: Call<List<Film>>, t: Throwable) {
+                            textError.text = "Network Error :: " + t.localizedMessage
+                            textError.visibility = View.VISIBLE
+                            buttonUpdate.visibility = View.VISIBLE
                             println("Network Error :: " + t.localizedMessage);
                         }
 
@@ -112,6 +123,7 @@ class FindFragment : Fragment() {
             }
         })
     }
+
 
     private fun createAdapter(films : List<Film>) : FilmAdapter{
         val adapter = FilmAdapter(films)
@@ -128,4 +140,44 @@ class FindFragment : Fragment() {
         return adapter
     }
 
+    fun update(view: View) {
+        val api = RetrofitHelper.getInstance().create(Api::class.java)
+        val textError : TextView = view.findViewById(R.id.textError)
+        val buttonUpdate : Button = view.findViewById(R.id.buttonUpdate)
+
+        viewModel.getFindLine().let { api.find(line = it) }
+            .enqueue(object : Callback<List<Film>> {
+                override fun onResponse(
+                    call: Call<List<Film>>,
+                    response: Response<List<Film>>
+                ) {
+                    buttonUpdate.visibility = View.GONE
+                    if (response.isSuccessful) {
+                        textError.visibility = View.GONE
+                        val films = response.body()
+                        if (films != null) {
+                            val adapter = createAdapter(films)
+                            listFilm.adapter = adapter
+                            saveAdapter = adapter
+                            viewModel.saveFindList(films)
+                        }
+                    }else if (response.code() == 404){
+                        textError.text = "Films not found"
+                        textError.visibility = View.VISIBLE
+                    }
+                }
+
+                override fun onFailure(call: Call<List<Film>>, t: Throwable) {
+                    textError.text = "Network Error :: " + t.localizedMessage
+                    textError.visibility = View.VISIBLE
+                    buttonUpdate.visibility = View.VISIBLE
+                    println("Network Error :: " + t.localizedMessage);
+                }
+
+            })
+
+    }
+
 }
+
+
