@@ -38,4 +38,8 @@
             app:destination="@id/productFragment"
             app:popUpTo="@id/recommendationFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/menuFragment"
+        android:name="com.example.mirea_mob_6sem.menu.MenuFragment"
+        android:label="MenuFragment" />
 </navigation>

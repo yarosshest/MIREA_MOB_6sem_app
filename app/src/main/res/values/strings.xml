@@ -11,4 +11,6 @@
     <string name="Search">Search</string>
     <string name="recom">Recommindations</string>
     <string name="update">Update</string>
+    <string name="theme_switch">Theme switch</string>
+    <string name="menu">menu</string>
 </resources>

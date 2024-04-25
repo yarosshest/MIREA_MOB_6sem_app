@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitHelper {
 
-    private const val BASE_URL = "http://10.192.210.79:8031/"
+    private const val BASE_URL = "http://172.31.160.1:8031/"
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(5, TimeUnit.MINUTES)
         .readTimeout(5, TimeUnit.MINUTES)
