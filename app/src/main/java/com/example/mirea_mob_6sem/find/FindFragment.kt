@@ -1,6 +1,10 @@
 package com.example.mirea_mob_6sem.find
 
+import android.app.SearchManager
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.provider.SearchRecentSuggestions
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +26,8 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+
+const val HISTORY_SIZE: Int = 10
 
 class FindFragment : Fragment() {
     private lateinit var saveAdapter : FilmAdapter
@@ -59,6 +65,9 @@ class FindFragment : Fragment() {
 
         listFilm.layoutManager = GridLayoutManager(context, 3)
 
+        val sharedPreferences = this.activity?.getSharedPreferences("history", Context.MODE_PRIVATE)
+
+
         if (this::saveAdapter.isInitialized){
             saveAdapter.setOnClickListener(object :
                 FilmAdapter.OnClickListener {
@@ -77,8 +86,6 @@ class FindFragment : Fragment() {
         }
 
         val api = RetrofitHelper.getInstance().create(Api::class.java)
-
-
         search.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 if (p0 != null) {
@@ -92,6 +99,7 @@ class FindFragment : Fragment() {
                         ) {
                             buttonUpdate.visibility = View.GONE
                             if (response.isSuccessful) {
+                                addInHistory(p0)
                                 textError.visibility = View.GONE
                                 val films = response.body()
                                 if (films != null) {
@@ -122,6 +130,29 @@ class FindFragment : Fragment() {
                 return true
             }
         })
+    }
+
+    private fun getHistory(): MutableList<String>{
+        val sharedPreferences =activity?.getSharedPreferences(getString(R.string.history),
+            Context.MODE_PRIVATE)
+        val historySet = sharedPreferences?.getStringSet(getString(R.string.history), HashSet<String>())
+        return ArrayList(historySet)
+    }
+
+
+    fun addInHistory(q: String){
+        var searchHistory: MutableList<String> = getHistory()
+        searchHistory.remove(q)
+        searchHistory.add(0, q)
+
+        if (searchHistory.size > HISTORY_SIZE){
+            searchHistory = searchHistory.subList(0, HISTORY_SIZE)
+        }
+
+        val sharedPreferences =activity?.getSharedPreferences(getString(R.string.history),
+            Context.MODE_PRIVATE)
+        sharedPreferences?.edit()?.putStringSet(getString(R.string.history), HashSet(searchHistory))
+            ?.apply()
     }
 
 
