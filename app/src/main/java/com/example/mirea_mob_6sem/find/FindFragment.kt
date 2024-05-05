@@ -1,14 +1,15 @@
 package com.example.mirea_mob_6sem.find
 
-import android.app.SearchManager
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
-import android.provider.SearchRecentSuggestions
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.core.os.bundleOf
@@ -31,10 +32,23 @@ const val HISTORY_SIZE: Int = 10
 
 class FindFragment : Fragment() {
     private lateinit var saveAdapter : FilmAdapter
-
     private val viewModel: AppViewModel by activityViewModels()
-
     private lateinit var listFilm : RecyclerView
+
+    private val api = RetrofitHelper.getInstance().create(Api::class.java)
+    private lateinit var historyLinearLayout : LinearLayout
+    private lateinit var buttonUpdate : Button
+    private lateinit var textError : TextView
+    private lateinit var search : SearchView
+
+    private var mainThreadHandler: Handler? = null
+
+
+    private val searchRunnable = Runnable { searchRequest() }
+
+    companion object {
+        private const val SEARCH_DEBOUNCE_DELAY = 2000L
+    }
 
 
 
@@ -43,20 +57,23 @@ class FindFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
+        mainThreadHandler = Handler(Looper.getMainLooper())
         return inflater.inflate(R.layout.fragment_find, container, false)
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val textError : TextView = view.findViewById(R.id.textError)
+        textError = view.findViewById(R.id.textError)
+        historyLinearLayout = view.findViewById(R.id.historyLayout)
 
-        val buttonUpdate : Button = view.findViewById(R.id.buttonUpdate)
+        buttonUpdate = view.findViewById(R.id.buttonUpdate)
         buttonUpdate.setOnClickListener { v ->
             update(v)
         }
 
-        val search = view.findViewById<SearchView>(R.id.searchName)
+        search = view.findViewById(R.id.searchName)
         search.setQuery(viewModel.getFindLine(), false)
 
         listFilm = view.findViewById(R.id.listFilm)
@@ -64,8 +81,6 @@ class FindFragment : Fragment() {
 
 
         listFilm.layoutManager = GridLayoutManager(context, 3)
-
-        val sharedPreferences = this.activity?.getSharedPreferences("history", Context.MODE_PRIVATE)
 
 
         if (this::saveAdapter.isInitialized){
@@ -85,51 +100,43 @@ class FindFragment : Fragment() {
             listFilm.adapter = adapter
         }
 
-        val api = RetrofitHelper.getInstance().create(Api::class.java)
+
+        search.setOnQueryTextFocusChangeListener { v, hasFocus ->
+            showHistory(hasFocus, historyLinearLayout)
+        }
+        
         search.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 if (p0 != null) {
                     viewModel.saveFindLine(p0)
                 }
-                p0?.let { api.find(line = it) }
-                    ?.enqueue(object : Callback<List<Film>> {
-                        override fun onResponse(
-                            call: Call<List<Film>>,
-                            response: Response<List<Film>>
-                        ) {
-                            buttonUpdate.visibility = View.GONE
-                            if (response.isSuccessful) {
-                                addInHistory(p0)
-                                textError.visibility = View.GONE
-                                val films = response.body()
-                                if (films != null) {
-                                    val adapter = createAdapter(films)
-                                    listFilm.adapter = adapter
-                                    saveAdapter = adapter
-                                    viewModel.saveFindList(films)
-                                }
-                            }else if (response.code() == 404){
-                                textError.text = "Films not found"
-                                textError.visibility = View.VISIBLE
-                            }
-                        }
-
-                        override fun onFailure(call: Call<List<Film>>, t: Throwable) {
-                            textError.text = "Network Error :: " + t.localizedMessage
-                            textError.visibility = View.VISIBLE
-                            buttonUpdate.visibility = View.VISIBLE
-                            println("Network Error :: " + t.localizedMessage);
-                        }
-
-                    })
+                callApiSearch(p0.toString())
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
-
+                searchDebounce()
                 return true
             }
         })
+    }
+
+    private fun showHistory(hasFocus: Boolean,linearLayout: LinearLayout){
+        if (hasFocus) {
+            linearLayout.visibility = View.VISIBLE
+            val hist = getHistory()
+
+            for (i in hist) {
+                val inflater = LayoutInflater.from(context)
+                val tv = inflater.inflate(R.layout.item_history, linearLayout, false) as TextView
+                tv.text = i
+                tv.setOnClickListener { v -> searchInHistory(v as TextView) }
+                linearLayout.addView(tv)
+            }
+        }else{
+            linearLayout.visibility = View.GONE
+        }
+
     }
 
     private fun getHistory(): MutableList<String>{
@@ -171,11 +178,58 @@ class FindFragment : Fragment() {
         return adapter
     }
 
-    fun update(view: View) {
-        val api = RetrofitHelper.getInstance().create(Api::class.java)
-        val textError : TextView = view.findViewById(R.id.textError)
-        val buttonUpdate : Button = view.findViewById(R.id.buttonUpdate)
+    private fun searchInHistory(v: TextView){
+        callApiSearch(v.text.toString())
+    }
 
+
+    private fun callApiSearch(line: String){
+        api.find(line = line)
+            .enqueue(object : Callback<List<Film>> {
+                override fun onResponse(
+                    call: Call<List<Film>>,
+                    response: Response<List<Film>>
+                ) {
+                    historyLinearLayout.visibility = View.GONE
+                    buttonUpdate.visibility = View.GONE
+                    if (response.isSuccessful) {
+                        addInHistory(line)
+                        textError.visibility = View.GONE
+                        val films = response.body()
+                        if (films != null) {
+                            val adapter = createAdapter(films)
+                            listFilm.adapter = adapter
+                            saveAdapter = adapter
+                            viewModel.saveFindList(films)
+                        }
+                    }else if (response.code() == 404){
+                        textError.text = "Films not found"
+                        textError.visibility = View.VISIBLE
+                    }
+                }
+
+                override fun onFailure(call: Call<List<Film>>, t: Throwable) {
+                    textError.text = "Network Error :: " + t.localizedMessage
+                    textError.visibility = View.VISIBLE
+                    buttonUpdate.visibility = View.VISIBLE
+                    println("Network Error :: " + t.localizedMessage);
+                }
+
+            })
+    }
+
+    private fun searchRequest(){
+        callApiSearch(search.query.toString())
+    }
+
+    private fun searchDebounce() {
+        mainThreadHandler?.removeCallbacks(searchRunnable)
+        mainThreadHandler?.postDelayed(searchRunnable, SEARCH_DEBOUNCE_DELAY)
+    }
+
+
+
+    fun update(view: View) {
         viewModel.getFindLine().let { api.find(line = it) }
             .enqueue(object : Callback<List<Film>> {
                 override fun onResponse(

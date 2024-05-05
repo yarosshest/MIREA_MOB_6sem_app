@@ -15,8 +15,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:hint="@string/Input_name"
-            />
+            android:hint="@string/Input_name">
+        </SearchView>
+
+        <LinearLayout
+            android:id="@+id/historyLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
 
         <TextView
             android:id="@+id/textError"
